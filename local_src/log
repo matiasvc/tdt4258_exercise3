@@ -1,0 +1,12 @@
+
+------------------------------
+target: driver-gamepad.compile
+------------------------------
+
+PATH=/home/tdt4258/Desktop/OSELAS.BSP-EnergyMicro-Gecko/platform-energymicro-efm32gg-dk3750/sysroot-cross/bin:/home/tdt4258/Desktop/OSELAS.BSP-EnergyMicro-Gecko/platform-energymicro-efm32gg-dk3750/sysroot-cross/sbin:$PATH KCONFIG_NOTIMESTAMP=1 pkg_wrapper_blacklist="TARGET_HARDEN_STACK TARGET_HARDEN_FORTIFY TARGET_HARDEN_RELRO TARGET_HARDEN_BINDNOW TARGET_HARDEN_PIE" make -j4 V=0 ARCH=arm CROSS_COMPILE=arm-cortexm3-uclinuxeabi- INSTALL_MOD_PATH=/home/tdt4258/Desktop/OSELAS.BSP-EnergyMicro-Gecko/platform-energymicro-efm32gg-dk3750/packages/linux-3.12-rc4 PTX_KERNEL_DIR=/home/tdt4258/Desktop/OSELAS.BSP-EnergyMicro-Gecko/platform-energymicro-efm32gg-dk3750/build-target/linux-3.12-rc4  DEPMOD=/home/tdt4258/Desktop/OSELAS.BSP-EnergyMicro-Gecko/platform-energymicro-efm32gg-dk3750/sysroot-host/sbin/depmod \
+		-C /home/tdt4258/Desktop/OSELAS.BSP-EnergyMicro-Gecko/platform-energymicro-efm32gg-dk3750/build-target/linux-3.12-rc4 \
+		M=/home/tdt4258/Desktop/OSELAS.BSP-EnergyMicro-Gecko/platform-energymicro-efm32gg-dk3750/build-target/driver-gamepad-1.0 \
+		modules
+make[1]: Entering directory `/home/tdt4258/Desktop/OSELAS.BSP-EnergyMicro-Gecko/platform-energymicro-efm32gg-dk3750/build-target/linux-3.12-rc4'
+  CC [M]  /home/tdt4258/Desktop/OSELAS.BSP-EnergyMicro-Gecko/platform-energymicro-efm32gg-dk3750/build-target/driver-gamepad-1.0/driver-gamepad.o
+make[1]: Leaving directory `/home/tdt4258/Desktop/OSELAS.BSP-EnergyMicro-Gecko/platform-energymicro-efm32gg-dk3750/build-target/linux-3.12-rc4'
