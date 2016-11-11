@@ -23,18 +23,21 @@
 dev_t device_number;
 struct cdev gamepad_cdev;
 struct class* device_class;
+struct fasync_struct* async_queue; // (LLD p. 170)
 
 /* Method Prototypes */
 irqreturn_t gamepad_interrupt_handler(int irq, void* dev_id, struct pt_regs* regs);
 static int gamepad_open(struct inode* inode, struct file* filp);
 int gamepad_release(struct inode *inode, struct file *filp);
 static ssize_t gamepad_read(struct file* filp, char* __user buff, size_t count, loff_t* offp);
+static int gamepad_fasync(int fd, struct file* filp, int mode);
+
 
 /* Avaiable operations on this driver */
 struct file_operations gamepad_fops = {
 	.owner = THIS_MODULE,
 	.open = gamepad_open,
-    .read = gamepad_read,
+	.read = gamepad_read,
 	.release = gamepad_release
 };
 
@@ -51,7 +54,7 @@ static int __init gamepad_init(void)
 {
 	int value;
 	printk(KERN_ALERT "Module initialization begin.\n");
-	
+
 
 	/* Obtain device numbers (LDD p. 45) */
 	value = alloc_chrdev_region(&device_number, 0, DEVICE_COUNT, DEVICE_NAME);
@@ -132,8 +135,11 @@ static void __exit gamepad_exit(void)
 	class_destroy(device_class);
 	cdev_del(&gamepad_cdev);
 
-	printk(KERN_DEBUG "Deallocating device numbers\n");
+	printk(KERN_DEBUG "Deallocating device numbers.\n");
 	unregister_chrdev_region(device_number, DEVICE_COUNT);
+
+	printk(KERN_DEBUG "Remove this filp from the asynchronously notified filp's.\n");
+	gamepad_fasync(-1, flip, 0);
 
 	printk(KERN_ALERT "Exit done.\n");
 }
@@ -143,6 +149,10 @@ irqreturn_t gamepad_interrupt_handler(int irq, void* dev_id, struct pt_regs* reg
 {
 	printk(KERN_DEBUG "Handling interrupt.");
 	iowrite32(ioread32(GPIO_IF), GPIO_IFC); // Clear interrupt
+	if (async_queue)
+	{
+		kill_fasync(async_queue, SIGIO, POLL_IN);
+	}
 	return IRQ_HANDLED;
 }
 
@@ -173,6 +183,12 @@ static ssize_t gamepad_read(struct file* filp, char* __user buff, size_t count, 
 			return 0;
 		}
     return 1;
+}
+
+/* Setup asynchronous notification to user space */
+static int gamepad_fasync(int fd, struct file* filp, int mode)
+{
+    return fasync_helper(fd, filp, mode, &async_queue);
 }
 
 /* Module configurations */
