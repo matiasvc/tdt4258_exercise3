@@ -1,5 +1,5 @@
 /*
- * This is a demo Linux kernel module. LDD p. 76
+ * This is a demo Linux kernel module.
  */
 
 #include <asm/io.h>
@@ -23,13 +23,14 @@
 dev_t device_number;
 struct cdev gamepad_cdev;
 struct class* device_class;
-struct fasync_struct* async_queue; // (LLD p. 170)
+struct fasync_struct* async_queue; /* (LLD p. 170) */
 
 /* Method Prototypes */
 irqreturn_t gamepad_interrupt_handler(int irq, void* dev_id, struct pt_regs* regs);
 static int gamepad_open(struct inode* inode, struct file* filp);
 int gamepad_release(struct inode *inode, struct file *filp);
 static ssize_t gamepad_read(struct file* filp, char* __user buff, size_t count, loff_t* offp);
+static ssize_t gamepad_write(struct file* filp, char* __user buff, size_t count, loff_t* offp);
 static int gamepad_fasync(int fd, struct file* filp, int mode);
 
 
@@ -37,8 +38,10 @@ static int gamepad_fasync(int fd, struct file* filp, int mode);
 struct file_operations gamepad_fops = {
 	.owner = THIS_MODULE,
 	.open = gamepad_open,
-	.read = gamepad_read,
 	.release = gamepad_release
+	.read = gamepad_read,
+	.write = gamepad_write,
+	.fasync = gamepad_fasync
 };
 
 /*
@@ -103,7 +106,7 @@ static int __init gamepad_init(void)
 	iowrite32(0xff, GPIO_EXTIFALL);
 	iowrite32(0xff, GPIO_EXTIRISE);
 	iowrite32(0xff, GPIO_IEN);
-	iowrite32(0x802, ISER0); // Enables interrupt handling
+	iowrite32(0x802, ISER0); /* Enables interrupt handling */
 
 
 	printk(KERN_ALERT "Module initialization done.\n");
@@ -120,8 +123,6 @@ static int __init gamepad_init(void)
 static void __exit gamepad_exit(void)
 {
 	printk(KERN_ALERT "Exit starting.\n");
-
-	// iowrite32(0x0000, GPIO_IEN); for disabling interrupts
 
 	printk(KERN_DEBUG "Freeing interrupts.\n");
 	free_irq(17, &gamepad_cdev);
@@ -148,7 +149,7 @@ static void __exit gamepad_exit(void)
 irqreturn_t gamepad_interrupt_handler(int irq, void* dev_id, struct pt_regs* regs)
 {
 	printk(KERN_DEBUG "Handling interrupt.");
-	iowrite32(ioread32(GPIO_IF), GPIO_IFC); // Clear interrupt
+	iowrite32(ioread32(GPIO_IF), GPIO_IFC); /* Clear interrupt */
 	if (async_queue)
 	{
 		kill_fasync(async_queue, SIGIO, POLL_IN);
@@ -156,7 +157,7 @@ irqreturn_t gamepad_interrupt_handler(int irq, void* dev_id, struct pt_regs* reg
 	return IRQ_HANDLED;
 }
 
-/* This is the functions that can be called from user space (from LDD p. 58) */
+/* --- This is the functions that can be called from user space (from LDD p. 58) --- */
 
 /* Not useful since all configurations is done in gamepad_init */
 static int gamepad_open(struct inode* inode, struct file* filp)
@@ -182,6 +183,13 @@ static ssize_t gamepad_read(struct file* filp, char* __user buff, size_t count, 
 			printk(KERN_ALERT "Could not copy all bytes from GPIO_PC_DIN.");
 			return 0;
 		}
+    return 1;
+}
+
+/* Do not use this as it's not necessary to write to buttons. */
+static ssize_t gamepad_write(struct file* filp, char* __user buff, size_t count, loff_t* offp)
+{
+    printk(KERN_INFO "Writing...");
     return 1;
 }
 
