@@ -2,32 +2,40 @@
  * This is a demo Linux kernel module. LDD p. 76
  */
 
+#include <asm/io.h>
+#include <asm/uaccess.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/fs.h>
+#include <linux/init.h>
+#include <linux/interrupt.h>
+#include <linux/kdev_t.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/init.h>
-#include <linux/kdev_t.h>
-#include <linus/fs.h>
-#include <linux/cdev.h>
-#include <linux/interrupt.h>
 
 #include "efm32gg.h"
 
 
 /* Constants */
-#define DEVICE_NAME = "GPIOGamepad"
-#define DEVICE_COUNT = 1
+#define DEVICE_NAME "GPIOGamepad"
+#define DEVICE_COUNT 1
 
 dev_t device_number;
 struct cdev gamepad_cdev;
 struct class* device_class;
 
+/* Method Prototypes */
+irqreturn_t gamepad_interrupt_handler(int irq, void* dev_id, struct pt_regs* regs);
+static int gamepad_open(struct inode* inode, struct file* filp);
+int gamepad_release(struct inode *inode, struct file *filp);
+static ssize_t gamepad_read(struct file* filp, char* __user buff, size_t count, loff_t* offp);
 
 /* Avaiable operations on this driver */
 struct file_operations gamepad_fops = {
 	.owner = THIS_MODULE,
 	.open = gamepad_open,
-  .read = gamepad_read,
-	.release = gamepad_release,
+    .read = gamepad_read,
+	.release = gamepad_release
 };
 
 /*
@@ -41,9 +49,9 @@ struct file_operations gamepad_fops = {
 
 static int __init gamepad_init(void)
 {
-	printk(KERN_ALERT "Module initialization begin.\n");
-
 	int value;
+	printk(KERN_ALERT "Module initialization begin.\n");
+	
 
 	/* Obtain device numbers (LDD p. 45) */
 	value = alloc_chrdev_region(&device_number, 0, DEVICE_COUNT, DEVICE_NAME);
@@ -63,7 +71,7 @@ static int __init gamepad_init(void)
 	cdev_add(&gamepad_cdev, device_number, DEVICE_COUNT);
 
 	/* Request reservation of GPIO pins used by gamepad, preventing overlapping calls from other drivers */
-	if (request_mem_region(GPIO_PC_BASE, 0x24, NAME) == NULL)
+	if (request_mem_region(GPIO_PC_BASE, 0x24, DEVICE_NAME) == NULL)
 	{
 		printk(KERN_ALERT "Failed to reserve GPIO_PC_BASE in memory.\n");
 		return -1;
