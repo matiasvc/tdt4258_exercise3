@@ -4,6 +4,8 @@
 
 #include <asm/io.h>
 #include <asm/uaccess.h>
+#include <asm/signal.h>
+#include <asm/siginfo.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/fs.h>
@@ -38,7 +40,7 @@ static int gamepad_fasync(int fd, struct file* filp, int mode);
 struct file_operations gamepad_fops = {
 	.owner = THIS_MODULE,
 	.open = gamepad_open,
-	.release = gamepad_release
+	.release = gamepad_release,
 	.read = gamepad_read,
 	.write = gamepad_write,
 	.fasync = gamepad_fasync
@@ -124,6 +126,9 @@ static void __exit gamepad_exit(void)
 {
 	printk(KERN_ALERT "Exit starting.\n");
 
+	/* Disable interrupts */
+	iowrite32(0x0000, GPIO_IEN);
+
 	printk(KERN_DEBUG "Freeing interrupts.\n");
 	free_irq(17, &gamepad_cdev);
 	free_irq(18, &gamepad_cdev);
@@ -140,7 +145,7 @@ static void __exit gamepad_exit(void)
 	unregister_chrdev_region(device_number, DEVICE_COUNT);
 
 	printk(KERN_DEBUG "Remove this filp from the asynchronously notified filp's.\n");
-	gamepad_fasync(-1, flip, 0);
+	//gamepad_fasync(-1, flip, 0);
 
 	printk(KERN_ALERT "Exit done.\n");
 }
@@ -152,7 +157,7 @@ irqreturn_t gamepad_interrupt_handler(int irq, void* dev_id, struct pt_regs* reg
 	iowrite32(ioread32(GPIO_IF), GPIO_IFC); /* Clear interrupt */
 	if (async_queue)
 	{
-		kill_fasync(async_queue, SIGIO, POLL_IN);
+		//kill_fasync(async_queue, SIGIO, POLL_IN);
 	}
 	return IRQ_HANDLED;
 }
