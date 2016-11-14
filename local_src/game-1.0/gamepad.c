@@ -1,3 +1,7 @@
+#include <fcntl.h>
+#include <signal.h>
+#include <unistd.h>
+
 int device;
 
 /* LDD3 p. 169 */
