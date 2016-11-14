@@ -36,7 +36,7 @@ int init_gamepad()
 /* LDD3 p. 169 */
 void input_handler(int sigio)
 {
-  char buffer[1];
+  char buffer;
   int gpio_value = read(device, &buffer, 1);
 
   if (gpio_value[0] == 0b0)
