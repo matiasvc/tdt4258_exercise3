@@ -144,7 +144,7 @@ static void __exit gamepad_exit(void)
 	printk(KERN_DEBUG "Deallocating device numbers.\n");
 	unregister_chrdev_region(device_number, DEVICE_COUNT);
 
-	printk(KERN_DEBUG "Remove this filp from the asynchronously notified filp's.\n");
+	//printk(KERN_DEBUG "Remove this filp from the asynchronously notified filp's.\n");
 	//gamepad_fasync(-1, flip, 0);
 
 	printk(KERN_ALERT "Exit done.\n");
@@ -172,10 +172,11 @@ static int gamepad_open(struct inode* inode, struct file* filp)
 }
 
 /* Not useful since all releasing is done in gamepad_exit */
+/* Remove this filp from the asynchronously notified filp's. */
 int gamepad_release(struct inode *inode, struct file *filp)
 {
   printk(KERN_INFO "Gamepad driver released.\n");
-	return 0;
+	return fasync_helper(-1, filp, 0, &async_queue);
 }
 
 /* Read buttons status and copy from kernel space to user space */
