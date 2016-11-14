@@ -187,16 +187,16 @@ static ssize_t gamepad_read(struct file* filp, char* __user buff, size_t count, 
 		if (value > 0)
 		{
 			printk(KERN_ALERT "Could not copy all bytes from GPIO_PC_DIN.");
-			return 0;
+			return -1;
 		}
-    return 1;
+    return 0;
 }
 
 /* Do not use this as it's not necessary to write to buttons. */
 static ssize_t gamepad_write(struct file* filp, char* __user buff, size_t count, loff_t* offp)
 {
     printk(KERN_INFO "Writing...");
-    return 1;
+    return 0;
 }
 
 /* Setup asynchronous notification to user space */
