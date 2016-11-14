@@ -157,7 +157,7 @@ irqreturn_t gamepad_interrupt_handler(int irq, void* dev_id, struct pt_regs* reg
 	iowrite32(ioread32(GPIO_IF), GPIO_IFC); /* Clear interrupt */
 	if (async_queue)
 	{
-		//kill_fasync(async_queue, SIGIO, POLL_IN);
+		kill_fasync(&async_queue, SIGIO, POLL_IN);
 	}
 	return IRQ_HANDLED;
 }
