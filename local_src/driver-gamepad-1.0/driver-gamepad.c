@@ -108,7 +108,7 @@ static int __init gamepad_init(void)
 	iowrite32(0xff, GPIO_EXTIFALL);
 	iowrite32(0xff, GPIO_EXTIRISE);
 	iowrite32(0xff, GPIO_IEN);
-	iowrite32(0x802, ISER0); /* Enables interrupt handling */
+	//iowrite32(0x802, ISER0); /* Enables interrupt handling */
 
 
 	printk(KERN_ALERT "Module initialization done.\n");
@@ -153,7 +153,6 @@ static void __exit gamepad_exit(void)
 /* Interrupt handler between hardware and the driver */
 irqreturn_t gamepad_interrupt_handler(int irq, void* dev_id, struct pt_regs* regs)
 {
-	printk(KERN_DEBUG "Handling interrupt.");
 	iowrite32(ioread32(GPIO_IF), GPIO_IFC); /* Clear interrupt */
 	if (async_queue)
 	{
@@ -184,12 +183,12 @@ static ssize_t gamepad_read(struct file* filp, char* __user buff, size_t count, 
 {
     uint32_t data = ioread32(GPIO_PC_DIN);
     int value = copy_to_user(buff, &data, 1);
-		if (value > 0)
-		{
-			printk(KERN_ALERT "Could not copy all bytes from GPIO_PC_DIN.");
-			return -1;
-		}
-    return 0;
+	if (value > 0)
+	{
+		printk(KERN_ALERT "Could not copy all bytes from GPIO_PC_DIN.\n");
+		return -1;
+	}
+    return 1;
 }
 
 /* Do not use this as it's not necessary to write to buttons. */

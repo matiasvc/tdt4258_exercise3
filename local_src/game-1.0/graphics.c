@@ -14,16 +14,21 @@
 #include <string.h>
 #include <math.h>
 
+#include <unistd.h>
+
 #define FB_DRAW 0x4680
 
 int fbfd;
 uint16_t* fbp;
 
 struct fb_var_screeninfo vinfo;
-struct fb_copyarea screen;
+struct fb_copyarea copyarea;
 
 int fb_nPixels;
 int fb_nBytes;
+
+// method prototype
+void refresh_fb(struct fb_copyarea *copyarea);
 
 // method implementations
 int init_graphics(void)
@@ -44,10 +49,10 @@ int init_graphics(void)
 
 	printf("Screeninfo: %d x %d, %dbpp\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel);
 
-	screen.dx = 0;
-	screen.dy = 0;
-	screen.width = vinfo.xres;
-	screen.height = vinfo.yres;
+	copyarea.dx = 0;
+	copyarea.dy = 0;
+	copyarea.width = vinfo.xres;
+	copyarea.height = vinfo.yres;
 
 	fb_nPixels = vinfo.xres * vinfo.yres;
 	fb_nBytes = fb_nPixels * vinfo.bits_per_pixel / 8;
@@ -60,7 +65,7 @@ int init_graphics(void)
 
 	// Write black to the entire screen
 	memset(fbp, 0x00, fb_nBytes);
-	refresh_fb();
+	refresh_fb(&copyarea);
 
 	return EXIT_SUCCESS;
 }
@@ -68,7 +73,8 @@ int init_graphics(void)
 
 inline void draw_pixel(int16_t x, int16_t y, uint16_t color, RenderObject *ro)
 {
-	if (x < 0 || x > (int16_t)screen.width || y < 0 || y > (int16_t)screen.height) { return; }
+	// Ignore pixels outside the screen
+	if (x < 0 || x > (int16_t)vinfo.xres || y < 0 || y > (int16_t)vinfo.yres) { return; }
 
 	if (ro->clearBufferIndex >= ro->clearBufferSize)
 	{
@@ -76,7 +82,12 @@ inline void draw_pixel(int16_t x, int16_t y, uint16_t color, RenderObject *ro)
 		return;
 	}
 
-	fbp[x + (y * screen.width)] = color;
+	fbp[x + (y * vinfo.xres)] = color;
+
+	if (x < ro->updateArea.xLow)  { ro->updateArea.xLow  = x; }
+	if (x > ro->updateArea.xHigh) { ro->updateArea.xHigh = x; }
+	if (y < ro->updateArea.yLow)  { ro->updateArea.yLow  = y; }
+	if (y > ro->updateArea.yHigh) { ro->updateArea.yHigh = y; }
 
 	ro->clearBuffer[ro->clearBufferIndex].x = x;
 	ro->clearBuffer[ro->clearBufferIndex].y = (uint8_t) y;
@@ -106,20 +117,26 @@ void draw_line(Vec2 v0, Vec2 v1, uint16_t color, RenderObject *ro)
 
 void draw_object(RenderObject *ro, Vec2 pos, fixedpt rot)
 {
-	if (ro->ctrlVector & (1 << RENDER_OBJECT_CTRL_CLEAR)) // Should we clear
-	{
+	{ // Clear
+		ro->updateArea.xLow = vinfo.xres;
+		ro->updateArea.xHigh = 0;
+		ro->updateArea.yLow = vinfo.yres;
+		ro->updateArea.yHigh = 0;
+
 		for (uint16_t i = 0; i < ro->clearBufferIndex; ++i)
 		{
 			uint16_t x = ro->clearBuffer[i].x;
 			uint16_t y = ro->clearBuffer[i].y;
-			fbp[x + (y * screen.width)] = COLOR_BLACK;
+			fbp[x + (y * vinfo.xres)] = COLOR_BLACK;
+
+			if (x < ro->updateArea.xLow)  { ro->updateArea.xLow  = x; }
+			if (x > ro->updateArea.xHigh) { ro->updateArea.xHigh = x; }
+			if (y < ro->updateArea.yLow)  { ro->updateArea.yLow  = y; }
+			if (y > ro->updateArea.yHigh) { ro->updateArea.yHigh = y; }
 		}
 		ro->clearBufferIndex = 0;
-		ro->ctrlVector |= ~(1 << RENDER_OBJECT_CTRL_CLEAR);
 	}
-
-	if (ro->ctrlVector & (1 << RENDER_OBJECT_CTRL_DRAW)) // Should we render
-	{
+	{ // Render
 		Mat2x2 rotMat = get_rotation_matrix(rot);
 
 		Vec2 vertecies[ro->nVertecies];
@@ -136,9 +153,25 @@ void draw_object(RenderObject *ro, Vec2 pos, fixedpt rot)
 
 			draw_line(from, to, ro->color, ro);
 		}
-		ro->ctrlVector |= ~(1 << RENDER_OBJECT_CTRL_DRAW);
 	}
 
+
+	int16_t draw_dx = ro->updateArea.xLow - 3;
+	int16_t draw_dy = ro->updateArea.yLow - 3;
+	int16_t draw_width = ro->updateArea.xHigh - ro->updateArea.xLow + 6;
+	int16_t draw_height = ro->updateArea.yHigh - ro->updateArea.yLow + 6;
+
+	if (draw_dx < 0) { draw_dx = 0; }
+	if (draw_dy < 0) { draw_dy = 0; }
+	if (draw_dx + draw_width > vinfo.xres) { draw_width = vinfo.xres - draw_dx; } 
+	if (draw_dy + draw_height > vinfo.yres) { draw_height = vinfo.yres - draw_dy; } 
+
+	copyarea.dx = draw_dx;
+	copyarea.dy = draw_dy;
+	copyarea.width = draw_width; 
+	copyarea.height = draw_height;
+	
+	refresh_fb(&copyarea);
 }
 
 void deinit_graphics(void)
@@ -147,8 +180,8 @@ void deinit_graphics(void)
     close(fbfd);
 }
 
-void refresh_fb(void)
+void refresh_fb(struct fb_copyarea *copyarea)
 {
-    ioctl(fbfd, FB_DRAW, &screen);
+    ioctl(fbfd, FB_DRAW, copyarea);
 }
 

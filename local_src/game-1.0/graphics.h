@@ -24,9 +24,6 @@
 #define COLOR_PURPLE          0x780F
 #define COLOR_OLIVE           0x7BE0
 
-#define RENDER_OBJECT_CTRL_CLEAR	0
-#define RENDER_OBJECT_CTRL_DRAW		1
-
 typedef struct
 {
 	uint16_t x;
@@ -35,12 +32,14 @@ typedef struct
 
 typedef struct
 {
-	// Control bits for the render object
-	uint8_t ctrlVector;
-	// [0]   Should clear
-	// [1]   Should draw
-	// [2-7] Not used
+	uint16_t xLow;
+	uint16_t xHigh;
+	uint16_t yLow;
+	uint16_t yHigh;
+} UpdateRect;
 
+typedef struct
+{
 	uint16_t color;
 
 	Vec2 *vertecies;
@@ -51,12 +50,13 @@ typedef struct
 	ScreenPoint *clearBuffer;
 	uint16_t clearBufferIndex;
 	uint16_t clearBufferSize;
+
+	UpdateRect updateArea;
 } RenderObject;
 
 int init_graphics(void);
 void deinit_graphics(void);
 void draw_object(RenderObject *ro, Vec2 pos, fixedpt rot);
-void refresh_fb(void);
 
 
 #endif // #ifndef __INCLUDE_GRAPHICS_H__

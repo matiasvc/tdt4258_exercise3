@@ -9,6 +9,23 @@ Vec2 new_vec(float x, float y)
 	return v;
 }
 
+Vec2 get_rot_vec(fixedpt theta)
+{
+	Vec2 b;
+	b.x = fixedpt_cos(theta);
+	b.y = fixedpt_sin(theta);
+	return b;
+}
+
+Vec2 normalize_vec(Vec2 v)
+{
+	Vec2 b;
+	fixedpt length = fixedpt_sqrt(fixedpt_mul(v.x, v.x) + fixedpt_mul(v.y, v.y));
+	b.x = fixedpt_div(v.x, length);
+	b.y = fixedpt_div(v.y, length);
+	return b;
+}
+
 Vec2 vec_scalar_mul(Vec2 v, fixedpt a)
 {
 	Vec2 b;
@@ -31,6 +48,11 @@ Vec2 mat_vec_mul(Mat2x2 A, Vec2 v)
 	b.x = fixedpt_mul(v.x, A.m11) + fixedpt_mul(v.y, A.m12);
 	b.y = fixedpt_mul(v.x, A.m21) + fixedpt_mul(v.y, A.m22);
 	return b;
+}
+
+fixedpt vec_length(Vec2 v)
+{
+	return fixedpt_sqrt(fixedpt_mul(v.x, v.x) + fixedpt_mul(v.y, v.y));
 }
 
 Mat2x2 new_mat(float m11, float m12, float m21, float m22)
