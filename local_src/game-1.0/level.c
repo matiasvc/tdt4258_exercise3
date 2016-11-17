@@ -39,7 +39,7 @@ uint32_t smallMeteorSpawnTime = 100;
 
 #define SCREEN_CENTER new_vec(160, 120)
 
-#define FRAMES_PER_SHOT 5
+#define FRAMES_PER_SHOT 10
 
 uint32_t framesSinceShoot = FRAMES_PER_SHOT;
 
