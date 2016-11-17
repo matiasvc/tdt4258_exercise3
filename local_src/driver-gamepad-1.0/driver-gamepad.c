@@ -23,6 +23,7 @@
 #define DEVICE_COUNT 1
 
 dev_t device_number;
+uint32_t last_data;
 struct cdev gamepad_cdev;
 struct class* device_class;
 struct fasync_struct* async_queue; /* (LLD p. 170) */
@@ -34,7 +35,6 @@ int gamepad_release(struct inode *inode, struct file *filp);
 static ssize_t gamepad_read(struct file* filp, char* __user buff, size_t count, loff_t* offp);
 static ssize_t gamepad_write(struct file* filp, char* __user buff, size_t count, loff_t* offp);
 static int gamepad_fasync(int fd, struct file* filp, int mode);
-
 
 /* Avaiable operations on this driver */
 struct file_operations gamepad_fops = {
@@ -154,6 +154,7 @@ static void __exit gamepad_exit(void)
 irqreturn_t gamepad_interrupt_handler(int irq, void* dev_id, struct pt_regs* regs)
 {
 	iowrite32(ioread32(GPIO_IF), GPIO_IFC); /* Clear interrupt */
+	last_data = ioread32(GPIO_PC_DIN);
 	if (async_queue)
 	{
 		kill_fasync(&async_queue, SIGIO, POLL_IN);
@@ -181,8 +182,7 @@ int gamepad_release(struct inode *inode, struct file *filp)
 /* Read buttons status and copy from kernel space to user space */
 static ssize_t gamepad_read(struct file* filp, char* __user buff, size_t count, loff_t* offp)
 {
-    uint32_t data = ioread32(GPIO_PC_DIN);
-    int value = copy_to_user(buff, &data, 1);
+    int value = copy_to_user(buff, &last_data, 1);
 	if (value > 0)
 	{
 		printk(KERN_ALERT "Could not copy all bytes from GPIO_PC_DIN.\n");
