@@ -15,12 +15,14 @@
 
 #define FRAME_TIME 33333
 
+uint8_t gameOver = 0;
+
 int main(int argc, char *argv[])
 {
 	init_graphics();
 	init_input();
 
-	create_new_game_object(GO_PLAYER, new_vec(160, 120), new_vec(0, 0), 0, 0);
+	reset_game();
 
 	struct timeval tv;
 	while (1)
@@ -28,7 +30,7 @@ int main(int argc, char *argv[])
 		gettimeofday(&tv, NULL);
 		unsigned long timeBeforeRender = (unsigned long)(tv.tv_sec) * 1000000 + (unsigned long)(tv.tv_usec);
 
-		update_game(fixedpt_div(FIXEDPT_ONE, fixedpt_fromint(30)));
+		update_game(&gameOver);
 
 		gettimeofday(&tv, NULL);
 		unsigned long timeAfterRender = (unsigned long)(tv.tv_sec) * 1000000 + (unsigned long)(tv.tv_usec);
@@ -37,6 +39,16 @@ int main(int argc, char *argv[])
 		if (diff < FRAME_TIME)
 		{
 			usleep(FRAME_TIME - diff);	
+		}
+
+		if (gameOver)
+		{
+			for (uint16_t i = 0; i < 90; ++i)
+			{
+				usleep(FRAME_TIME);
+			}
+			reset_game();
+			gameOver = 0;
 		}
 	}
 
